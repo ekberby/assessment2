@@ -1,6 +1,19 @@
 import tkinter
 import random
 
+fightmode = {
+    'armour':{
+        'durability':1,
+        'price':0
+    },
+    'weapon':{
+        'ID':-1,
+        'name':None,
+        'damage':0,
+        'price':0
+    }
+}
+
 player = {
     'name': '',
     'money': 0,
@@ -10,11 +23,160 @@ player = {
         'weapons': [],
         'keys': [],
         'armours': [],
-        'health pad': 0
+        'health pad': {
+            'point': 0,
+            'price': 0,
+            'quantity':0
+        }
     }
 }
 
-player['money'] = random.randrange(50, 310, 1)
+player['money'] = random.randrange(50, 3100, 1)
+shopInfo = {
+    'weapons':[],
+    'armours':[],
+    'health pad': {
+        'point': 0,
+        'price': 0,
+        'quantity':0
+    },
+    'keys':[]
+}
+
+def readShop(): 
+    readShop = open("Shop.txt", "r")
+
+    list = readShop.read().split("\n")
+    for element in list:
+        if element == '':
+            list.remove(element)
+
+    for element in list:
+        if element.split(':')[0][:6] == 'weapon':
+            counter1 = 0
+            weaponName = element.split(':')[1].split(',')[0].strip()
+            weaponDamage = int(element.split(':')[1].split(',')[1].strip())
+            weaponPrice = int(element.split(':')[1].split(',')[2].strip())
+            weapon = {'ID': counter1, 'name':weaponName, 'damage':weaponDamage, 'price':weaponPrice}
+            shopInfo['weapons'].append(weapon)
+            counter1+=1
+        elif element.split(':')[0][:3] == 'key':
+            keyCode = int(element.split(':')[1].split(',')[0].strip())
+            keyPrice = int(element.split(':')[1].split(',')[1].strip())
+            key = {'code':keyCode, 'price':keyPrice}
+            shopInfo['keys'].append(key)
+        elif element.split(':')[0][:6] == 'armour':
+            counter2 = 0
+            armourDurability = int(element.split(':')[1].split(',')[0].strip())
+            armourPrice = int(element.split(':')[1].split(',')[1].strip())
+            armour = {'ID':counter2, 'durability':armourDurability, 'price':armourPrice}
+            shopInfo['armours'].append(armour)
+            counter2+=1
+        elif (element != list[0]) & (element[0] != '#'):
+            healthPadQuantity = int(element[0].strip())
+            shopInfo['health pad']['quantity'] = healthPadQuantity
+        elif element.split(':')[0] == '# HealingPad description':
+            healthPadPrice = int(element.split(':')[1].split(',')[1].strip()[5:])
+            healthPadPoints = int(element.split(':')[1].split(',')[0].strip()[6:])
+            shopInfo['health pad']['price'] = healthPadPrice
+            shopInfo['health pad']['point'] = healthPadPoints
+    return shopInfo
+
+
+shopInfo = readShop()
+
+townInfo = {
+    'label':[],
+    'enemy':{
+        'name':'',
+        'damage':0,
+        'health':0
+    },
+    'point':0,
+    'weapon':{
+        'name':'',
+        'damage':0,
+        'price':0
+    },
+    'armour':{
+        'durability':1,
+        'price':0,
+    },
+    'key':{
+        'code':-1,
+        'price':0
+    },
+    'money':0,
+    'health pad':0,
+    'treasure':{
+        'code':0,
+        'point':0
+    }
+}
+
+def readTown(roomNum):
+    town = {
+        'label':[],
+        'enemy':{
+            'name':'',
+            'damage':0,
+            'health':0
+        },
+        'point':0,
+        'weapon':{
+            'name':'',
+            'damage':0,
+            'price':0
+        },
+        'armour':{
+            'durability':1,
+            'price':0,
+        },
+        'key':{
+            'code':-1,
+            'price':0
+        },
+        'money':0,
+        'health pad':0,
+        'treasure':{
+            'code':None,
+            'point':0
+        }
+    }
+    filename = f"Room{roomNum}.txt"
+    readTown = open(filename, "r")
+    list = readTown.read().split("\n")
+    for element in list:
+        if element == '':
+            list.remove(element)
+    for i in range(0, len(list)):
+        if list[i][:7] == 'Welcome':
+            town['label'].append(list[i])
+            town['label'].append(list[i+1])
+        if list[i][:7] == '# Enemy':
+            town['enemy']['name'] = list[i+1].split(',')[0].strip()
+            town['enemy']['damage'] = int(list[i+1].split(',')[1].strip())
+            town['enemy']['health'] = int(list[i+1].split(',')[2].strip())
+        if list[i][:7] == '# Point':
+            town['point'] = int(list[i+1].strip())
+        if list[i][:8] == '# Weapon':
+            town['weapon']['name'] = list[i+1].split(',')[0].strip()
+            town['weapon']['damage'] = int(list[i+1].split(',')[1].strip())
+            town['weapon']['price'] = int(list[i+1].split(',')[2].strip())
+        if list[i][:8] == '# Armour':
+            town['armour']['durability'] = list[i+1].split(',')[0].strip()
+            town['armour']['price'] = int(list[i+1].split(',')[1].strip())
+        if list[i][:10] == '# Treasure':
+            town['treasure']['code'] = int(list[i+1].split(',')[0].strip())
+            town['treasure']['point'] = int(list[i+1].split(',')[1].strip())
+        if list[i][:7] == '# Key':
+            town['key']['code'] = int(list[i+1].split(',')[0].strip())
+            town['key']['price'] = int(list[i+1].split(',')[1].strip())
+        if list[i][:7] == '# Money':
+            town['money'] = int(list[i+1].strip())
+        if list[i][:12] == '# Healingpad':
+            town['health'] = int(list[i+1].strip())
+    return town
 
 window = tkinter.Tk()
 
@@ -28,24 +190,26 @@ def open_info():
         username = tkinter.Label(frame2, text = "Username: " + player['name'], font="Calibri, 12")
         money = tkinter.Label(frame2, text="Money: "+str(player['money']), font="Calibri, 12")
         health = tkinter.Label(frame2, text="Health: "+str(player['health']), font="Calibri, 12")
+        point = tkinter.Label(frame2, text = "Point: "+str(player['points']), font='Calibri, 12')
         frame3 = tkinter.Frame(window)
-        btn_town1 = tkinter.Button(frame3, text="Town1", font="Calibri, 12")
-        btn_town2 = tkinter.Button(frame3, text="Town2", font="Calibri, 12")
-        btn_town3 = tkinter.Button(frame3, text="Town3", font="Calibri, 12")
-        btn_town4 = tkinter.Button(frame3, text="Town4", font="Calibri, 12")
+        btn_town1 = tkinter.Button(frame3, text="Town1", font="Calibri, 12", command=lambda: goTown(1))
+        btn_town2 = tkinter.Button(frame3, text="Town2", font="Calibri, 12", command=lambda: goTown(2))
+        btn_town3 = tkinter.Button(frame3, text="Town3", font="Calibri, 12", command=lambda: goTown(3))
+        btn_town4 = tkinter.Button(frame3, text="Town4", font="Calibri, 12", command=lambda: goTown(4))
+        btn_inventory = tkinter.Button(frame3, text="Inventory", font="Calibri, 12", command=showInventory)
         btn_shop = tkinter.Button(frame3, text="Shop", font="Calibri, 12", command=showShop)
-        btn_back = tkinter.Button(frame3, text="Log out", font="Calibri, 12", command=openLogin)
         frame3.pack(side=tkinter.BOTTOM, pady=20)
         frame2.pack(side=tkinter.TOP, pady=20)
-        username.grid(row=0, column=0, padx=100)
-        money.grid(row = 0, column=1, padx=100)
-        health.grid(row = 0, column=2, padx=100)
-        btn_town1.grid(row = 0, column=0, padx=50)
-        btn_town2.grid(row = 0, column=1, padx=50)
-        btn_town3.grid(row = 0, column=2, padx=50)
-        btn_town4.grid(row = 0, column=3, padx=50)
-        btn_shop.grid(row = 0, column=4, padx=50)
-        btn_back.grid(row = 0, column=5, padx=50)
+        username.grid(row=0, column=0, padx=80)
+        money.grid(row = 0, column=1, padx=80)
+        health.grid(row = 0, column=2, padx=80)
+        point.grid(row= 0, column = 3, padx = 80)
+        btn_town1.grid(row = 0, column=0, padx=40)
+        btn_town2.grid(row = 0, column=1, padx=40)
+        btn_town3.grid(row = 0, column=2, padx=40)
+        btn_town4.grid(row = 0, column=3, padx=40)
+        btn_shop.grid(row = 0, column=4, padx=40)
+        btn_inventory.grid(row = 0, column=5, padx=40)
     else:
         warning = tkinter.Tk()
         warning.title("Warning")
@@ -55,71 +219,62 @@ def open_info():
         warning.mainloop()
 
 def buyInventory(element, type):
-    if type == 'weapon':
-        list = player['inventory']
-        list['weapons'].append(element)
-    if type == 'armour':
-        list = player['inventory']
-        list['armours'].append(element)
-    if type == 'key':
-        list = player['inventory']
-        list['keys'].append(element)
+    if player['money']>= element['price']:
+        if type == 'weapon':
+            list = player['inventory']
+            list['weapons'].append(element)
+            shopInfo['weapons'].remove(element)
+            loadShop(shopInfo)
+        if type == 'armour':
+            list = player['inventory']
+            list['armours'].append(element)
+            shopInfo['armours'].remove(element)
+            loadShop(shopInfo)
+        if type == 'key':
+            list = player['inventory']
+            list['keys'].append(element)
+            shopInfo['keys'].remove(element)
+            loadShop(shopInfo)
 
-def buyHealth(info, label):
-    if info['health pad'] > 0:
-        info['health pad'] -= 1
-        player['inventory']['health pad'] += 1
-        label.config(text="Quantity: " + str(info['health pad']))
+        player['money'] -= element['price']
     else:
         warning = tkinter.Tk()
         warning.title("Warning")
-        warning.geometry("350x100")
-        label_warning = tkinter.Label(warning, text = "Health pad not available in the shop.", font="Calibri, 12", pady=30)
+        warning.geometry("250x100")
+        label_warning = tkinter.Label(warning, text = "You don't have enough money!", font="Calibri, 12", pady=30)
         label_warning.pack()
         warning.mainloop()
 
-def showShop():
-    readShop = open("Shop.txt", "r")
+def buyHealth(info, label):
+    if player['money']>= info['health pad']['price']:
+        if info['health pad']['quantity'] > 0:
+            info['health pad']['quantity'] -= 1
+            player['inventory']['health pad']['quantity'] += 1
+            player['inventory']['health pad']['price'] = info['health pad']['price']
+            player['inventory']['health pad']['point'] = info['health pad']['price']
+            label.config(text="Quantity: "+str(info['health pad']['quantity'])+"\nPrice: "+str(info['health pad']['price'])+"\nPoints: "+str(info['health pad']['point']))
+            player['money'] -= info['health pad']['price']
+        else:
+            warning = tkinter.Tk()
+            warning.title("Warning")
+            warning.geometry("350x100")
+            label_warning = tkinter.Label(warning, text = "Health pad not available in the shop.", font="Calibri, 12", pady=30)
+            label_warning.pack()
+            warning.mainloop()
+    else:
+        warning = tkinter.Tk()
+        warning.title("Warning")
+        warning.geometry("250x100")
+        label_warning = tkinter.Label(warning, text = "You don't have enough money!", font="Calibri, 12", pady=30)
+        label_warning.pack()
+        warning.mainloop()
 
-    list = readShop.read().split("\n")
 
-    shopInfo = {
-        'weapons':[],
-        'armours':[],
-        'health pad': 0,
-        'keys':[]
-    }
-
-    for element in list:
-        if element == '':
-            list.remove(element)
-
-    for element in list:
-        if element.split(':')[0][:6] == 'weapon':
-            weaponName = element.split(':')[1].split(',')[0].strip()
-            weaponDamage = element.split(':')[1].split(',')[1].strip()
-            weaponPrice = element.split(':')[1].split(',')[2].strip()
-            weapon = {'Name':weaponName, 'Damage':weaponDamage, 'Price':weaponPrice}
-            shopInfo['weapons'].append(weapon)
-        elif element.split(':')[0][:3] == 'key':
-            keyCode = element.split(':')[1].split(',')[0].strip()
-            keyPrice = element.split(':')[1].split(',')[1].strip()
-            key = {'Code':keyCode, 'Price':keyPrice}
-            shopInfo['keys'].append(key)
-        elif element.split(':')[0][:6] == 'armour':
-            armourDurability = element.split(':')[1].split(',')[0].strip()
-            armourPrice = element.split(':')[1].split(',')[1].strip()
-            armour = {'Durability':armourDurability, 'Price':armourPrice}
-            shopInfo['armours'].append(armour)
-        elif (element != list[0]) & (element[0] != '#'):
-            healthPadQuantity = int(element[0].strip())
-            shopInfo['health pad'] = healthPadQuantity
-
+def loadShop(shopInfo):
     for object in window.winfo_children():
             object.pack_forget()
     window.geometry("1500x900")
     shopLabel = tkinter.Label(window, text="Welcome to the Shop", font="Calibri, 12")
-    headFrame = tkinter.Frame(window)
     utilityFrame = tkinter.Frame(window)
     buttonFrame = tkinter.Frame(window)
 
@@ -128,47 +283,46 @@ def showShop():
     keyFrame = tkinter.Frame(utilityFrame)
     healthFrame = tkinter.Frame(utilityFrame)
     
-    weaponLabel = tkinter.Label(headFrame, text="Weapons", font="Calibri, 12")
-    armourLabel = tkinter.Label(headFrame, text="Armours", font="Calibri, 12")
-    keyLabel = tkinter.Label(headFrame, text="Keys", font="Calibri, 12")
-    healthLabel = tkinter.Label(headFrame, text="Health Pad", font="Calibri, 12")
+    weaponLabel = tkinter.Label(weaponFrame, text="Weapons", font="Calibri, 12")
+    armourLabel = tkinter.Label(armourFrame, text="Armours", font="Calibri, 12")
+    keyLabel = tkinter.Label(keyFrame, text="Keys", font="Calibri, 12")
+    healthLabel = tkinter.Label(healthFrame, text="Health Pad", font="Calibri, 12")
 
-    btn_inventory = tkinter.Button(buttonFrame, text="Inventory", font="Calibri, 12")
+    btn_inventory = tkinter.Button(buttonFrame, text="Inventory", font="Calibri, 12", command=showInventory)
     btn_back = tkinter.Button(buttonFrame, text="Go back", font="Calibri, 12", command=open_info)
     
     shopLabel.pack(side = tkinter.TOP, pady=20)
-    headFrame.pack(pady=20)
     utilityFrame.pack(pady=20)
     buttonFrame.pack(side = tkinter.BOTTOM, pady=20)
-    weaponFrame.grid(row =0, column=0, padx=50)
-    armourFrame.grid(row =0, column=1, padx = 50)
-    keyFrame.grid(row =0, column=2, padx = 50)
-    healthFrame.grid(row =0, column=3, padx = 50)
-    weaponLabel.grid(row = 0, column = 0, padx = 150)
-    armourLabel.grid(row = 0, column = 1, padx = 150)
-    keyLabel.grid(row = 0, column = 2, padx = 150)
-    healthLabel.grid(row = 0, column = 3, padx = 150)
+    weaponFrame.grid(row =0, column=0, padx=20)
+    armourFrame.grid(row =0, column=1, padx = 20)
+    keyFrame.grid(row =0, column=2, padx = 20)
+    healthFrame.grid(row =0, column=3, padx = 20)
+    weaponLabel.grid(row = 0, column = 0)
+    armourLabel.grid(row = 0, column = 0)
+    keyLabel.grid(row = 0, column = 0)
+    healthLabel.grid(row = 0, column = 0)
 
     for element in shopInfo['weapons']:
-         s = "Name: "+ element['Name']+", "+"Damage: "+element['Damage']+", Price: "+element['Price']
+         s = "Name: "+ element['name']+", "+"Damage: "+str(element['damage'])+", Price: "+str(element['price'])
          weaponInfo = tkinter.Label(weaponFrame, text=s, font="Calibri, 12")
          buyButton = tkinter.Button(weaponFrame, text="Buy", font="Calibri, 12", command=lambda e=element, t='weapon': buyInventory(e, t))
          weaponInfo.grid(row = shopInfo['weapons'].index(element) +1, column =0 ,pady=15, padx=10)
-         buyButton.grid(row = shopInfo['weapons'].index(element)+1, column =1 ,pady=15, padx=10)
+         buyButton.grid(row = shopInfo['weapons'].index(element) +1, column =1 ,pady=15, padx=10)
     for element in shopInfo['armours']:
-        s = "Durability: "+element['Durability']+", Price: "+element['Price']
+        s = "Durability: "+str(element['durability'])+", Price: "+str(element['price'])
         ArmourInfo = tkinter.Label(armourFrame, text=s, font="Calibri, 12")
         buyButton = tkinter.Button(armourFrame, text="Buy", font="Calibri, 12", command=lambda e=element, t='armour': buyInventory(e, t))
         ArmourInfo.grid(row = shopInfo['armours'].index(element) +1, column =0 ,pady=15, padx=10)
-        buyButton.grid(row = shopInfo['armours'].index(element)+1, column =1 ,pady=15, padx=10)
+        buyButton.grid(row = shopInfo['armours'].index(element) +1, column =1 ,pady=15, padx=10)
     for element in shopInfo['keys']:
-        s = "Code: "+element['Code']+", Price: "+element['Price']
+        s = "Code: "+str(element['code'])+", Price: "+str(element['price'])
         keyInfo = tkinter.Label(keyFrame, text=s, font="Calibri, 12")
         buyButton = tkinter.Button(keyFrame, text="Buy", font="Calibri, 12", command=lambda e=element, t='key': buyInventory(e, t))
         keyInfo.grid(row = shopInfo['keys'].index(element) +1, column =0 ,pady=15, padx=10)
-        buyButton.grid(row = shopInfo['keys'].index(element)+1, column =1 ,pady=15, padx=10)
+        buyButton.grid(row = shopInfo['keys'].index(element) +1, column =1 ,pady=15, padx=10)
     
-    s = "Quantity: "+str(shopInfo['health pad'])
+    s = "Quantity: "+str(shopInfo['health pad']['quantity'])+"\nPrice: "+str(shopInfo['health pad']['price'])+"\nPoints: "+str(shopInfo['health pad']['point'])
     healthInfo = tkinter.Label(healthFrame, text = s, font="Calibri, 12")
     buyButton = tkinter.Button(healthFrame, text="Buy", font="Calibri, 12", command = lambda: buyHealth(shopInfo, healthInfo))
     healthInfo.grid(row = 1, column =0 ,pady=15, padx=10)
@@ -177,8 +331,218 @@ def showShop():
 
     btn_inventory.grid(row = 0, column=0, padx= 100)
     btn_back.grid(row = 0, column=1, padx=100)
+
+def showInventory():
+    for object in window.winfo_children():
+            object.pack_forget()
+    window.geometry("1500x900")
+    shopLabel = tkinter.Label(window, text="Welcome to the Shop", font="Calibri, 12")
+    utilityFrame = tkinter.Frame(window)
+    buttonFrame = tkinter.Frame(window)
+
+    weaponFrame = tkinter.Frame(utilityFrame)
+    armourFrame = tkinter.Frame(utilityFrame)
+    keyFrame = tkinter.Frame(utilityFrame)
+    healthFrame = tkinter.Frame(utilityFrame)
     
-         
+    weaponLabel = tkinter.Label(weaponFrame, text="Weapons", font="Calibri, 12")
+    armourLabel = tkinter.Label(armourFrame, text="Armours", font="Calibri, 12")
+    keyLabel = tkinter.Label(keyFrame, text="Keys", font="Calibri, 12")
+    healthLabel = tkinter.Label(healthFrame, text="Health Pad", font="Calibri, 12")
+
+    btn_back_shop = tkinter.Button(buttonFrame, text="Go back to shop", font="Calibri, 12", command=showShop)
+    btn_back_home = tkinter.Button(buttonFrame, text='Go back to home', font='Calibri 12', command=open_info)
+    
+    shopLabel.pack(side = tkinter.TOP, pady=20)
+    utilityFrame.pack(pady=20)
+    buttonFrame.pack(side = tkinter.BOTTOM, pady=20)
+    weaponFrame.grid(row =0, column=0, padx=50)
+    armourFrame.grid(row =0, column=1, padx = 50)
+    keyFrame.grid(row =0, column=2, padx = 50)
+    healthFrame.grid(row =0, column=3, padx = 50)
+    weaponLabel.grid(row = 0, column = 0)
+    armourLabel.grid(row = 0, column = 0)
+    keyLabel.grid(row = 0, column = 0)
+    healthLabel.grid(row = 0, column = 0)
+
+    for element in player['inventory']['weapons']:
+         s = "Name: "+ element['name']+", "+"Damage: "+str(element['damage'])+", Price: "+str(element['price'])
+         weaponInfo = tkinter.Label(weaponFrame, text=s, font="Calibri, 12")
+         weaponInfo.grid(row = player['inventory']['weapons'].index(element) +1, column =0 ,pady=15, padx=10)
+         if len(player['inventory']['weapons']) > 0:
+            use_btn = tkinter.Button(weaponFrame, text='Use', font="Calibri, 12", command=lambda e=element, t='weapon': useUtil(t, e))
+            sell_btn = tkinter.Button(weaponFrame, text='Sell', font="Calibri, 12", command=lambda e=element, t='weapon': sellUtil(t, e))
+            use_btn.grid(row = player['inventory']['weapons'].index(element) +1, column =1 ,pady=15, padx=10)
+            sell_btn.grid(row = player['inventory']['weapons'].index(element) +1, column =2 ,pady=15, padx=10)
+    for element in player['inventory']['armours']:
+        if element['price']!= 0 & element['durability'] != 1:
+            s = "Durability: "+str(element['durability'])+", Price: "+str(element['price'])
+            ArmourInfo = tkinter.Label(armourFrame, text=s, font="Calibri, 12")
+            ArmourInfo.grid(row = player['inventory']['armours'].index(element) +1, column =0 ,pady=15, padx=10)
+            if len(player['inventory']['armours']) > 0:
+                use_btn = tkinter.Button(armourFrame, text='Use', font="Calibri, 12", command=lambda e=element, t='armour': useUtil(t, e))
+                sell_btn = tkinter.Button(armourFrame, text='Sell', font="Calibri, 12", command=lambda e=element, t='armour': sellUtil(t, e))
+                use_btn.grid(row = player['inventory']['armours'].index(element) +1, column =1 ,pady=15, padx=10)
+                sell_btn.grid(row = player['inventory']['armours'].index(element) +1, column =2 ,pady=15, padx=10)
+    for element in player['inventory']['keys']:
+        if element['code'] != -1:
+            s = "Code: "+str(element['code'])+", Price: "+str(element['price'])
+            keyInfo = tkinter.Label(keyFrame, text=s, font="Calibri, 12")
+            keyInfo.grid(row = player['inventory']['keys'].index(element) +1, column =0 ,pady=15, padx=10)
+    
+    s = "Quantity: "+str(player['inventory']['health pad']['quantity'])
+    healthInfo = tkinter.Label(healthFrame, text = s, font="Calibri, 12")
+    healthInfo.grid(row = 1, column =0 ,pady=15, padx=10)
+    if player['inventory']['health pad']['quantity'] > 0:
+        use_btn = tkinter.Button(healthFrame, text='Use', font="Calibri, 12", command=lambda e=player['inventory']['health pad'], t='health pad': useUtil(t, e))
+        sell_btn = tkinter.Button(healthFrame, text='Sell', font="Calibri, 12", command=lambda e=player['inventory']['health pad'], t='health pad': sellUtil(t, e))
+        use_btn.grid(row = 1, column =1 ,pady=15, padx=10)
+        sell_btn.grid(row = 1, column =2 ,pady=15, padx=10)
+
+    btn_back_shop.grid(row = 0, column=1, padx=100)
+    btn_back_home.grid(row = 0, column = 2, padx = 100)
+
+
+def showShop():
+    loadShop(shopInfo)
+
+
+def useUtil(utilType, element):
+    if utilType == 'weapon':
+        fightmode['weapon']['ID'] = element['ID']
+        fightmode['weapon']['name'] = element['name']
+        fightmode['weapon']['damage'] = element['damage']
+        fightmode['weapon']['price'] = element['price']
+    if utilType == 'armour':
+        fightmode['armour']['durability'] = element['durability']
+        fightmode['armour']['price'] = element['price']
+    if utilType == 'health pad':
+        player['inventory']['health pad']['quantity'] -=1
+        if (player['health'] + element['point']) < 100:
+            player['health'] += element['point']
+        else:
+            player['health'] = 100
+    showInventory()
+
+
+def sellUtil(utilType, element):
+    if utilType == 'weapon':
+        player['inventory']['weapons'].remove(element)
+        player['money']+= element['price']
+    if utilType == 'armour':
+        player['inventory']['armours'].remove(element)
+        player['money']+= element['price']
+    if utilType == 'health pad':
+        player['inventory']['health pad']['quantity'] -=1
+        player['money'] += player['inventory']['health pad']['price']
+    showInventory()
+
+def loadTown(info):
+    for object in window.winfo_children():
+            object.pack_forget()
+    window.geometry("1500x900")
+    s = info['label'][0]
+    townLabel1 = tkinter.Label(window, text=s, font="Calibri, 12")
+    s= info['label'][1]
+    townLabel2 = tkinter.Label(window, text=s, font="Calibri, 12")
+    infoFrame = tkinter.Frame(window)
+    buttonFrame = tkinter.Frame(window)
+    s = "Enemy:\n"+"Name: "+info['enemy']['name']+", Damage: "+str(info['enemy']['damage'])+", Health: "+str(info['enemy']['health'])
+    enemyInfo = tkinter.Label(infoFrame, text=s,font="Calibri, 12")
+    s = "Points:\n"+str(info['point'])
+    pointInfo = tkinter.Label(infoFrame, text=s,font="Calibri, 12")
+    s = "Weapon:\n"+"Name: "+info['weapon']['name']+", Damage: "+str(info['weapon']['damage'])+", Price: "+str(info['weapon']['price'])
+    weaponInfo = tkinter.Label(infoFrame, text=s,font="Calibri, 12")
+    s = "Money:\n"+str(info['money'])
+    moneyInfo = tkinter.Label(infoFrame, text=s,font="Calibri, 12")
+    s = "Health Pad:\n"+str(info['health pad'])
+    healthInfo = tkinter.Label(infoFrame, text=s,font="Calibri, 12")
+    s = "Treasure:\n"+"Code: "+str(info['treasure']['code']) +", Point: "+str(info['treasure']['point'])
+    if info['treasure']['code'] == None:
+        s = "Treasure:\nNone"
+    treasureInfo = tkinter.Label(infoFrame, text=s,font="Calibri, 12")
+    inventory_btn = tkinter.Button(buttonFrame, text = 'Inventory', font= 'Calibri, 12', command=showInventory)
+    fight_btn = tkinter.Button(buttonFrame, text ='Fight', font = 'Calibri, 12', command=lambda: fight_enemy(info))
+    btn_back = tkinter.Button(buttonFrame, text="Go back", font="Calibri, 12", command=open_info)
+    enemyInfo.pack(pady=15)
+    pointInfo.pack(pady=15)
+    weaponInfo.pack(pady=15)
+    moneyInfo.pack(pady=15)
+    healthInfo.pack(pady=15)
+    treasureInfo.pack(pady=15)
+    townLabel1.pack(pady=20)
+    townLabel2.pack(pady=5)
+    infoFrame.pack(pady=20)
+    buttonFrame.pack(side=tkinter.BOTTOM)
+    inventory_btn.grid(row = 0, column = 0, pady=20, padx = 15)
+    fight_btn.grid(row = 0, column = 1, pady = 20, padx = 15)
+    btn_back.grid(row = 0, column=2, pady=20, padx = 15)
+
+
+def fight_enemy(info):
+    if player['health'] == 0:
+        warning = tkinter.Tk()
+        warning.title("Warning")
+        warning.geometry("250x100")
+        label_warning = tkinter.Label(warning, text = "You don't have enough health to fight!", font="Calibri, 12", pady=30)
+        label_warning.pack()
+        warning.mainloop()
+    if player['points'] < 0:
+        warning = tkinter.Tk()
+        warning.title("Warning")
+        warning.geometry("250x100")
+        label_warning = tkinter.Label(warning, text = "You lost the game!", font="Calibri, 12", pady=30)
+        label_warning.pack()
+        warning.mainloop()
+    if fightmode['weapon']['name'] == None:
+        warning = tkinter.Tk()
+        warning.title("Warning")
+        warning.geometry("500x100")
+        label_warning = tkinter.Label(warning, text = "You don't have any weapon to fight!\n Go back and equip weapon from inventory or buy from shop.", font="Calibri, 12", pady=30)
+        label_warning.pack()
+        warning.mainloop()
+    else:
+        success = True
+        fight_scene = tkinter.Tk()
+        fight_scene.title('Fighting scene')
+        fight_scene.geometry('350x200')
+        successLabel = tkinter.Label(fight_scene, font='Calibri, 12')
+        while True:
+            info['enemy']['health'] = info['enemy']['health'] - fightmode['weapon']['damage']
+            if info['enemy']['health'] <= 0:
+                successLabel = tkinter.Label(fight_scene, text='You won the fight! All city inventory is yours.', font='Calibri, 12')
+                break
+            player['health'] = player['health'] - (info['enemy']['damage']/fightmode['armour']['durability'])
+            if player['health'] <= 0:
+                success = False
+                successLabel = tkinter.Label(fight_scene, text='You lost the fight!', font='Calibri, 12')
+                player['points'] -= info['point']
+                break
+        if success:
+            player['money']+= info['money']
+            player['points'] += info['point']
+            player['inventory']['weapons'].append(info['weapon'])
+            player['inventory']['armours'].append(info['armour'])
+            player['inventory']['health pad']['quantity'] += info['health pad']
+            player['inventory']['keys'].append(info['key'])
+        player['inventory']['weapons'].remove(fightmode['weapon'])
+        player['inventory']['armours'].remove(fightmode['armour'])
+        successLabel.grid(row =0, column=0, padx=50, pady=50)
+        fight_scene.mainloop()
+        
+
+    
+    
+def goTown(roomNum):
+    if roomNum == 1:
+        townInfo = readTown(1)
+    if roomNum == 2:
+        townInfo = readTown(2)
+    if roomNum == 3:
+        townInfo = readTown(3)
+    if roomNum == 4:
+        townInfo = readTown(4)
+    loadTown(townInfo)
 
 window.geometry("300x200")
 
