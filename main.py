@@ -1,6 +1,8 @@
 import tkinter
 import random
 
+
+#for fight inventory
 fightmode = {
     'armour':{
         'ID':-1,
@@ -15,6 +17,8 @@ fightmode = {
     }
 }
 
+
+#player initialization
 player = {
     'name': '',
     'money': 0,
@@ -33,6 +37,8 @@ player = {
     }
 }
 
+
+#money initialization
 player['money'] = random.randrange(50, 310, 1)
 shopInfo = {
     'weapons':[],
@@ -45,15 +51,19 @@ shopInfo = {
     'keys':[]
 }
 
+#returning all content from chosen file
 def readFile(filename):
     with open(filename, 'r') as f:
         lines = f.readlines()
     return lines
 
+
+#updating file
 def updateFile(lines, filename):
     with open(filename, 'w') as f:
         f.writelines(lines)
 
+#reading the shop txt file and adding all content to dictionary
 def readShop(): 
     readShop = open("Shop.txt", "r")
 
@@ -95,9 +105,10 @@ def readShop():
     readShop.close()
     return shopInfo
 
-
+#importing shop
 shopInfo = readShop()
 
+#for town information collection
 townInfo = {
     'label':[],
     'enemy':{
@@ -127,6 +138,8 @@ townInfo = {
     }
 }
 
+
+#reading the given town file
 def readTown(roomNum):
     town = {
         'label':[],
@@ -191,8 +204,11 @@ def readTown(roomNum):
             town['health'] = int(list[i+1].strip())
     return town
 
+#starting the GUI window
 window = tkinter.Tk()
 
+
+#main page after log in
 def open_info():
     if len(input.get()) > 0:
         for object in window.winfo_children():
@@ -244,6 +260,7 @@ def open_info():
         label_warning.pack()
         warning.mainloop()
 
+#adding items into invewntory which are bought in shop
 def buyInventory(element, type):
     if player['money']>= element['price']:
         if type == 'weapon':
@@ -271,6 +288,8 @@ def buyInventory(element, type):
         label_warning.pack()
         warning.mainloop()
 
+
+#buying health pads differs in some aspects from other utilities so I created new function for it
 def buyHealth(info, label):
     if player['money']>= info['health pad']['price']:
         if info['health pad']['quantity'] > 0:
@@ -295,7 +314,7 @@ def buyHealth(info, label):
         label_warning.pack()
         warning.mainloop()
 
-
+#showing the shop information on GUI
 def loadShop(shopInfo):
     for object in window.winfo_children():
             object.pack_forget()
@@ -358,6 +377,8 @@ def loadShop(shopInfo):
     btn_inventory.grid(row = 0, column=0, padx= 100)
     btn_back.grid(row = 0, column=1, padx=100)
 
+
+#Showing the information of inventory on GUI
 def showInventory():
     for object in window.winfo_children():
             object.pack_forget()
@@ -439,7 +460,7 @@ def showInventory():
     btn_back_shop.grid(row = 0, column=1, padx=100)
     btn_back_home.grid(row = 0, column = 2, padx = 100)
 
-
+#checking if user has the key for treasure box
 def openTreasure(element):
     check = True
     success = tkinter.Tk()
@@ -463,7 +484,7 @@ def openTreasure(element):
 def showShop():
     loadShop(shopInfo)
 
-
+#using utility for fight
 def useUtil(utilType, element):
     if utilType == 'weapon':
         fightmode['weapon']['ID'] = element['ID']
@@ -482,7 +503,7 @@ def useUtil(utilType, element):
             player['health'] = 100
     showInventory()
 
-
+#selling utility which is already in inventory
 def sellUtil(utilType, element):
     if utilType == 'weapon':
         player['inventory']['weapons'].remove(element)
@@ -495,6 +516,7 @@ def sellUtil(utilType, element):
         player['money'] += player['inventory']['health pad']['price']
     showInventory()
 
+#showing the information of town on GUI
 def loadTown(info, filename):
     for object in window.winfo_children():
             object.pack_forget()
@@ -543,14 +565,14 @@ def loadTown(info, filename):
         btn_back = tkinter.Button(buttonFrame, text="Go back", font="Calibri, 12", command=open_info)
         btn_back.grid(row = 0, column=0, pady=20, padx = 15)
 
-
+#updating the health of enemy after fight
 def updateHealth(lines, health):
     for line in lines:
         if line == '# Enemy description: name, damage, health\n':
             lines[lines.index(line)+1] = str(lines[lines.index(line)+1].split(',')[0].strip()) + ','+ str(lines[lines.index(line)+1].split(',')[1].strip()) + ',' + str(health)+'\n\n'
     return lines
 
-
+#fighting with enemy of the chosen town
 def fight_enemy(info, filename):
     lines = None
     if player['health'] == 0:
@@ -629,7 +651,7 @@ def fight_enemy(info, filename):
         fight_scene.mainloop()
 
     
-    
+#function helps to choose which town should be shown    
 def goTown(roomNum):
     if roomNum == 1:
         townInfo = readTown(1)
@@ -652,6 +674,7 @@ input = tkinter.Entry(frame1)
 
 button = tkinter.Button(frame1, text="Log in", bg="green", fg="white", font="Calibri, 12", command=open_info)
 
+#opening login page
 def openLogin():
     for object in window.winfo_children():
             object.pack_forget()
