@@ -15,5 +15,3 @@ shovel,15,80
 
 # Treasure description: code, point
 0,3
-
-

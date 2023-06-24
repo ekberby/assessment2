@@ -3,6 +3,7 @@ import random
 
 fightmode = {
     'armour':{
+        'ID':-1,
         'durability':1,
         'price':0
     },
@@ -43,6 +44,15 @@ shopInfo = {
     'keys':[]
 }
 
+def readFile(filename):
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+    return lines
+
+def updateFile(lines, filename):
+    with open(filename, 'w') as f:
+        f.writelines(lines)
+
 def readShop(): 
     readShop = open("Shop.txt", "r")
 
@@ -80,6 +90,8 @@ def readShop():
             healthPadPoints = int(element.split(':')[1].split(',')[0].strip()[6:])
             shopInfo['health pad']['price'] = healthPadPrice
             shopInfo['health pad']['point'] = healthPadPoints
+
+    readShop.close()
     return shopInfo
 
 
@@ -189,7 +201,7 @@ def open_info():
         frame2 = tkinter.Frame(window)
         username = tkinter.Label(frame2, text = "Username: " + player['name'], font="Calibri, 12")
         money = tkinter.Label(frame2, text="Money: "+str(player['money']), font="Calibri, 12")
-        health = tkinter.Label(frame2, text="Health: "+str(player['health']), font="Calibri, 12")
+        health = tkinter.Label(frame2, text="Health: "+str(round(player['health'], 1)), font="Calibri, 12")
         point = tkinter.Label(frame2, text = "Point: "+str(player['points']), font='Calibri, 12')
         frame3 = tkinter.Frame(window)
         btn_town1 = tkinter.Button(frame3, text="Town1", font="Calibri, 12", command=lambda: goTown(1))
@@ -414,6 +426,7 @@ def useUtil(utilType, element):
         fightmode['weapon']['damage'] = element['damage']
         fightmode['weapon']['price'] = element['price']
     if utilType == 'armour':
+        fightmode['armour']['ID'] = element['ID']
         fightmode['armour']['durability'] = element['durability']
         fightmode['armour']['price'] = element['price']
     if utilType == 'health pad':
@@ -437,16 +450,17 @@ def sellUtil(utilType, element):
         player['money'] += player['inventory']['health pad']['price']
     showInventory()
 
-def loadTown(info):
+def loadTown(info, filename):
     for object in window.winfo_children():
             object.pack_forget()
     window.geometry("1500x900")
+    buttonFrame = tkinter.Frame(window)
     s = info['label'][0]
     townLabel1 = tkinter.Label(window, text=s, font="Calibri, 12")
     s= info['label'][1]
     townLabel2 = tkinter.Label(window, text=s, font="Calibri, 12")
     infoFrame = tkinter.Frame(window)
-    buttonFrame = tkinter.Frame(window)
+        
     s = "Enemy:\n"+"Name: "+info['enemy']['name']+", Damage: "+str(info['enemy']['damage'])+", Health: "+str(info['enemy']['health'])
     enemyInfo = tkinter.Label(infoFrame, text=s,font="Calibri, 12")
     s = "Points:\n"+str(info['point'])
@@ -462,8 +476,7 @@ def loadTown(info):
         s = "Treasure:\nNone"
     treasureInfo = tkinter.Label(infoFrame, text=s,font="Calibri, 12")
     inventory_btn = tkinter.Button(buttonFrame, text = 'Inventory', font= 'Calibri, 12', command=showInventory)
-    fight_btn = tkinter.Button(buttonFrame, text ='Fight', font = 'Calibri, 12', command=lambda: fight_enemy(info))
-    btn_back = tkinter.Button(buttonFrame, text="Go back", font="Calibri, 12", command=open_info)
+    fight_btn = tkinter.Button(buttonFrame, text ='Fight', font = 'Calibri, 12', command=lambda: fight_enemy(info, filename))
     enemyInfo.pack(pady=15)
     pointInfo.pack(pady=15)
     weaponInfo.pack(pady=15)
@@ -476,10 +489,19 @@ def loadTown(info):
     buttonFrame.pack(side=tkinter.BOTTOM)
     inventory_btn.grid(row = 0, column = 0, pady=20, padx = 15)
     fight_btn.grid(row = 0, column = 1, pady = 20, padx = 15)
+    btn_back = tkinter.Button(buttonFrame, text="Go back", font="Calibri, 12", command=open_info)
     btn_back.grid(row = 0, column=2, pady=20, padx = 15)
 
 
-def fight_enemy(info):
+def updateHealth(lines, health):
+    for line in lines:
+        if line == '# Enemy description: name, damage, health\n':
+            lines[lines.index(line)+1] = str(lines[lines.index(line)+1].split(',')[0].strip()) + ','+ str(lines[lines.index(line)+1].split(',')[1].strip()) + ',' + str(health)+'\n\n'
+    return lines
+
+
+def fight_enemy(info, filename):
+    lines = None
     if player['health'] == 0:
         warning = tkinter.Tk()
         warning.title("Warning")
@@ -514,9 +536,14 @@ def fight_enemy(info):
                 break
             player['health'] = player['health'] - (info['enemy']['damage']/fightmode['armour']['durability'])
             if player['health'] <= 0:
+                player['health'] = 0
                 success = False
                 successLabel = tkinter.Label(fight_scene, text='You lost the fight!', font='Calibri, 12')
-                player['points'] -= info['point']
+                player['points'] -= 2
+                lines = readFile(filename)
+                lines = updateHealth(lines, info['enemy']['health'])
+                updateFile(lines, filename)
+                loadTown(info, filename)
                 break
         if success:
             player['money']+= info['money']
@@ -526,10 +553,10 @@ def fight_enemy(info):
             player['inventory']['health pad']['quantity'] += info['health pad']
             player['inventory']['keys'].append(info['key'])
         player['inventory']['weapons'].remove(fightmode['weapon'])
-        player['inventory']['armours'].remove(fightmode['armour'])
+        if fightmode['armour'] in player['inventory']['armours']:
+            player['inventory']['armours'].remove(fightmode['armour'])
         successLabel.grid(row =0, column=0, padx=50, pady=50)
         fight_scene.mainloop()
-        
 
     
     
@@ -542,7 +569,8 @@ def goTown(roomNum):
         townInfo = readTown(3)
     if roomNum == 4:
         townInfo = readTown(4)
-    loadTown(townInfo)
+    filename = f"Room{roomNum}.txt"
+    loadTown(townInfo, filename)
 
 window.geometry("300x200")
 
